@@ -2,6 +2,7 @@ package controller;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -28,9 +29,8 @@ public class PlaywrightController {
             new Locator.WaitForOptions().setTimeout(45000);
             new Page.WaitForSelectorOptions().setTimeout(60000);
 
-            // Click login button
-            Locator loginBtn = page.locator("//a[text()='Login']");
-            loginBtn.waitFor(new Locator.WaitForOptions().setTimeout(45000));
+            Locator loginBtn = page.locator("//a[normalize-space(text())='Login']");
+            loginBtn.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE).setTimeout(60000));
             loginBtn.click();
 
             // Enter credentials
