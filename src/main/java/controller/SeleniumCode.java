@@ -49,6 +49,9 @@ public class SeleniumCode {
 
         WebDriver driver = new ChromeDriver(options);
         driver.get("https://www.naukri.com");
+        new WebDriverWait(driver, Duration.ofSeconds(30))
+                .until(webDriver -> ((JavascriptExecutor) webDriver)
+                        .executeScript("return document.readyState").equals("complete"));
 //        takeScreenshot(driver, "step2_after_login_click.png");
         Thread.sleep(5000);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
