@@ -9,8 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.time.Duration;
 import java.util.Map;
 
@@ -46,10 +45,10 @@ public class SeleniumCode {
                     .until(webDriver -> ((JavascriptExecutor) webDriver)
                             .executeScript("return document.readyState").equals("complete"));
 
-            // Give extra buffer time for dynamic content
+            // Extra buffer for dynamic content
             Thread.sleep(3000);
 
-            // Handle any popup if present
+            // Close any popup if present
             closePopupIfPresent(driver);
 
             // Wait for login button with retry
@@ -58,7 +57,6 @@ public class SeleniumCode {
                     40);
 
             loginBtn.click();
-
             Thread.sleep(2000);
 
             WebElement usernameField = new WebDriverWait(driver, Duration.ofSeconds(20))
@@ -95,8 +93,9 @@ public class SeleniumCode {
             return currentValue;
 
         } catch (TimeoutException e) {
-            takeScreenshot(driver, "D:/login_timeout.png");
-            throw new RuntimeException("Login button was not clickable within the given time. Check screenshot at D:/login_timeout.png", e);
+            String screenshotPath = takeScreenshot(driver, "login_timeout.png");
+            throw new RuntimeException(
+                    "Login button was not clickable within the given time. Check screenshot at " + screenshotPath, e);
         } finally {
             driver.quit();
         }
@@ -126,9 +125,17 @@ public class SeleniumCode {
         throw new TimeoutException("Element not found after retry: " + locator);
     }
 
-    private void takeScreenshot(WebDriver driver, String fileName) throws IOException {
+    private String takeScreenshot(WebDriver driver, String fileName) throws IOException {
         File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-        Files.copy(screenshot.toPath(), Paths.get(fileName));
-        System.out.println("Saved screenshot: " + fileName);
+
+        // Use relative "screenshots" directory for both local and Render environments
+        String screenshotDir = "screenshots";
+        Files.createDirectories(Paths.get(screenshotDir));
+
+        String finalPath = screenshotDir + "/" + fileName;
+        Files.copy(screenshot.toPath(), Paths.get(finalPath), StandardCopyOption.REPLACE_EXISTING);
+
+        System.out.println("Saved screenshot: " + finalPath);
+        return finalPath;
     }
 }
