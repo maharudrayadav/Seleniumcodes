@@ -74,7 +74,7 @@ public class SeleniumCode {
         Thread.sleep(2000);
         WebDriverWait waits = new WebDriverWait(driver, Duration.ofSeconds(30));
         WebElement viewProfile = waits.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//div[contains(@class,'nI-gNb-drawer__bars')]")
+                By.xpath("//div[contains(@class,'drawer__bars')]")
         ));
         viewProfile.click();
         Thread.sleep(2000);
