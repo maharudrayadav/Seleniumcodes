@@ -72,7 +72,10 @@ public class SeleniumCode {
         WebElement loginB = driver.findElement(By.xpath("//button[text()='Login']"));
         loginB.click();
         Thread.sleep(2000);
-        WebElement viewProfile = driver.findElement(By.xpath("//div[@class='nI-gNb-drawer__bars']"));
+        WebDriverWait waits = new WebDriverWait(driver, Duration.ofSeconds(30));
+        WebElement viewProfile = waits.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//div[contains(@class,'nI-gNb-drawer__bars')]")
+        ));
         viewProfile.click();
         Thread.sleep(2000);
         WebElement view = driver.findElement(By.xpath("//a[@class='nI-gNb-info__sub-link']"));
