@@ -56,6 +56,11 @@
 			<artifactId>selenium-devtools-v128</artifactId>
 			<version>4.24.0</version>
 		</dependency>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-java</artifactId>
+			<version>4.32.0</version> <!-- Use latest version -->
+		</dependency>
 	</dependencies>
 
 	<build>
