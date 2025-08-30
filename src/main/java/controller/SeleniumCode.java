@@ -14,7 +14,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Map;
 
-
 @RestController
 @RequestMapping("/api/code")
 public class SeleniumCode {
@@ -22,6 +21,7 @@ public class SeleniumCode {
     @PostMapping("/open-chrome")
     public String openChrome(@RequestBody Map<String, String> body) throws InterruptedException, IOException {
         String username = body.get("username");
+        String passwordValue = body.get("password");
         String runHeadless = System.getenv().getOrDefault("HEADLESS", "true");
 
         ChromeOptions options = new ChromeOptions();
@@ -29,17 +29,6 @@ public class SeleniumCode {
             options.addArguments("--headless=new");
         }
 
-        // Force desktop mode
-//        options.addArguments("--disable-gpu");
-//        options.addArguments("--no-sandbox");
-//        options.addArguments("--disable-dev-shm-usage");
-//        options.addArguments("--remote-allow-origins=*");
-//        options.addArguments("--window-size=1920,1080");
-//        options.addArguments(
-//                "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139 Safari/537.36"
-//        );
-
-        options.addArguments("--headless=new");
         options.addArguments("--disable-gpu");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
@@ -48,51 +37,98 @@ public class SeleniumCode {
         options.addArguments("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139 Safari/537.36");
 
         WebDriver driver = new ChromeDriver(options);
-        driver.get("https://www.naukri.com");
-        new WebDriverWait(driver, Duration.ofSeconds(30))
-                .until(webDriver -> ((JavascriptExecutor) webDriver)
-                        .executeScript("return document.readyState").equals("complete"));
-//        takeScreenshot(driver, "step2_after_login_click.png");
-        Thread.sleep(5000);
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
-        WebElement loginBtn = wait.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//a[contains(text(),'Login')] | //div[text()='Login'] | //button[text()='Login']")
-        ));
-        loginBtn.click();
-//        takeScreenshot(driver, "step2_after_login_click.png");
-        Thread.sleep(2000);
-        WebElement usernameField = driver.findElement(
-                By.xpath("//input[@placeholder='Enter your active Email ID / Username']")
-        );
-        usernameField.sendKeys(username);
-        WebElement password = driver.findElement(
-                By.xpath("//input[@placeholder='Enter your password']")
-        );
-        password.sendKeys(body.get("password"));
-        WebElement loginB = driver.findElement(By.xpath("//button[text()='Login']"));
-        loginB.click();
-        Thread.sleep(2000);
-        WebDriverWait waits = new WebDriverWait(driver, Duration.ofSeconds(30));
-        WebElement viewProfile = waits.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//div[contains(@class,'drawer__bars')]")
-        ));
-        viewProfile.click();
-        Thread.sleep(2000);
-        WebElement view = driver.findElement(By.xpath("//a[@class='nI-gNb-info__sub-link']"));
-        view.click();
-        Thread.sleep(2000);
-        WebElement edit = driver.findElement(By.xpath("//em[text()='editOneTheme']"));
-        edit.click();
-        Thread.sleep(2000);
-        WebElement nameField = driver.findElement(By.id("name"));
-        String currentValue = nameField.getAttribute("value");
-        System.out.println("Current Name: " + currentValue);
-        return currentValue;
+
+        try {
+            driver.get("https://www.naukri.com");
+
+            // Wait until the page loads completely
+            new WebDriverWait(driver, Duration.ofSeconds(40))
+                    .until(webDriver -> ((JavascriptExecutor) webDriver)
+                            .executeScript("return document.readyState").equals("complete"));
+
+            // Give extra buffer time for dynamic content
+            Thread.sleep(3000);
+
+            // Handle any popup if present
+            closePopupIfPresent(driver);
+
+            // Wait for login button with retry
+            WebElement loginBtn = waitForElementWithRetry(driver,
+                    By.xpath("//a[contains(text(),'Login')] | //div[text()='Login'] | //button[text()='Login']"),
+                    40);
+
+            loginBtn.click();
+
+            Thread.sleep(2000);
+
+            WebElement usernameField = new WebDriverWait(driver, Duration.ofSeconds(20))
+                    .until(ExpectedConditions.elementToBeClickable(
+                            By.xpath("//input[@placeholder='Enter your active Email ID / Username']")));
+            usernameField.sendKeys(username);
+
+            WebElement passwordField = driver.findElement(
+                    By.xpath("//input[@placeholder='Enter your password']"));
+            passwordField.sendKeys(passwordValue);
+
+            WebElement loginButton = driver.findElement(By.xpath("//button[text()='Login']"));
+            loginButton.click();
+
+            // Wait until profile drawer becomes clickable
+            WebElement viewProfile = new WebDriverWait(driver, Duration.ofSeconds(40))
+                    .until(ExpectedConditions.elementToBeClickable(
+                            By.xpath("//div[contains(@class,'drawer__bars')]")));
+            viewProfile.click();
+
+            Thread.sleep(2000);
+            WebElement view = driver.findElement(By.xpath("//a[@class='nI-gNb-info__sub-link']"));
+            view.click();
+
+            Thread.sleep(2000);
+            WebElement edit = driver.findElement(By.xpath("//em[text()='editOneTheme']"));
+            edit.click();
+
+            Thread.sleep(2000);
+            WebElement nameField = driver.findElement(By.id("name"));
+            String currentValue = nameField.getAttribute("value");
+            System.out.println("Current Name: " + currentValue);
+
+            return currentValue;
+
+        } catch (TimeoutException e) {
+            takeScreenshot(driver, "D:/login_timeout.png");
+            throw new RuntimeException("Login button was not clickable within the given time. Check screenshot at D:/login_timeout.png", e);
+        } finally {
+            driver.quit();
+        }
     }
+
+    private void closePopupIfPresent(WebDriver driver) {
+        try {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+            WebElement popupCloseBtn = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.xpath("//div[contains(@class,'crossIcon')] | //span[text()='×']")));
+            popupCloseBtn.click();
+            Thread.sleep(1000);
+        } catch (Exception ignored) {
+            // No popup found — safe to continue
+        }
+    }
+
+    private WebElement waitForElementWithRetry(WebDriver driver, By locator, int timeoutSeconds) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds));
+        for (int i = 0; i < 2; i++) {
+            try {
+                return wait.until(ExpectedConditions.elementToBeClickable(locator));
+            } catch (TimeoutException e) {
+                System.out.println("Retrying to find element: " + locator);
+            }
+        }
+        throw new TimeoutException("Element not found after retry: " + locator);
+    }
+
     private void takeScreenshot(WebDriver driver, String fileName) throws IOException {
         File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
         Files.copy(screenshot.toPath(), Paths.get(fileName));
         System.out.println("Saved screenshot: " + fileName);
     }
 }
-
