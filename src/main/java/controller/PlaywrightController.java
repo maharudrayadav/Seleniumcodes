@@ -5,6 +5,7 @@ import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.Map;
 
 @RestController
@@ -18,8 +19,16 @@ public class PlaywrightController {
 
         try (Playwright playwright = Playwright.create()) {
             Browser browser = playwright.chromium().launch(
-                    new BrowserType.LaunchOptions().setHeadless(true)
+                    new BrowserType.LaunchOptions()
+                            .setHeadless(true)
+                            .setArgs(Arrays.asList(new String[]{
+                                    "--no-sandbox",
+                                    "--disable-dev-shm-usage",
+                                    "--disable-gpu",
+                                    "--disable-setuid-sandbox"
+                            }))
             );
+
             Page page = browser.newPage();
             page.setDefaultTimeout(60000);
 

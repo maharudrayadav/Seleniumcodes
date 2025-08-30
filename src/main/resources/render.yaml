@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: playwright-spring-service
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: JAVA_OPTS
+        value: "-Djava.awt.headless=true"
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: "0"
+    autoDeploy: true
