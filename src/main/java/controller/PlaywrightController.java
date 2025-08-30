@@ -26,6 +26,7 @@ public class PlaywrightController {
             page.navigate("https://www.naukri.com");
             page.waitForLoadState(LoadState.NETWORKIDLE);
             new Locator.WaitForOptions().setTimeout(45000);
+            new Page.WaitForSelectorOptions().setTimeout(60000);
 
             // Click login button
             Locator loginBtn = page.locator("//a[text()='Login']");
