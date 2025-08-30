@@ -126,16 +126,23 @@ public class SeleniumCode {
     }
 
     private String takeScreenshot(WebDriver driver, String fileName) throws IOException {
+        // Save screenshots inside Spring Boot project under static folder
+        String relativePath = "src/main/resources/static/screenshots";
+        File dir = new File(relativePath);
+
+        if (!dir.exists()) {
+            dir.mkdirs(); // Create the folder if it doesn't exist
+        }
+
         File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+        String fullPath = relativePath + "/" + fileName;
 
-        // Use relative "screenshots" directory for both local and Render environments
-        String screenshotDir = "screenshots";
-        Files.createDirectories(Paths.get(screenshotDir));
+        Files.copy(screenshot.toPath(), Paths.get(fullPath), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
-        String finalPath = screenshotDir + "/" + fileName;
-        Files.copy(screenshot.toPath(), Paths.get(finalPath), StandardCopyOption.REPLACE_EXISTING);
+        System.out.println("Screenshot saved at: " + fullPath);
 
-        System.out.println("Saved screenshot: " + finalPath);
-        return finalPath;
+        // Return URL path for easy access
+        return "/screenshots/" + fileName;
     }
+
 }
