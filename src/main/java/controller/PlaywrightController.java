@@ -5,7 +5,7 @@ import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -18,35 +18,41 @@ public class PlaywrightController {
         String password = body.get("password");
 
         try (Playwright playwright = Playwright.create()) {
-            Browser browser = playwright.chromium().launch(
-                    new BrowserType.LaunchOptions()
-                            .setHeadless(true)
-                            .setArgs(Arrays.asList(new String[]{
-                                    "--no-sandbox",
-                                    "--disable-dev-shm-usage",
-                                    "--disable-gpu",
-                                    "--disable-setuid-sandbox"
-                            }))
-            );
+
+            // Configure launch options for Render deployment
+            BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
+                    .setHeadless(true)
+                    .setArgs(List.of(
+                            "--no-sandbox",
+                            "--disable-dev-shm-usage",
+                            "--disable-gpu",
+                            "--disable-setuid-sandbox",
+                            "--disable-software-rasterizer",
+                            "--disable-features=VizDisplayCompositor"
+                    ));
+
+
+            // Launch Chromium with custom options
+            Browser browser = playwright.chromium().launch(launchOptions);
 
             Page page = browser.newPage();
             page.setDefaultTimeout(60000);
 
-            // Open Naukri
+            // Open Naukri website
             page.navigate("https://www.naukri.com");
             page.waitForLoadState(LoadState.NETWORKIDLE);
-            new Locator.WaitForOptions().setTimeout(45000);
-            new Page.WaitForSelectorOptions().setTimeout(60000);
 
             Locator loginBtn = page.locator("//a[normalize-space(text())='Login']");
-            loginBtn.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE).setTimeout(60000));
+            loginBtn.waitFor(new Locator.WaitForOptions()
+                    .setState(WaitForSelectorState.VISIBLE)
+                    .setTimeout(60000));
             loginBtn.click();
 
             // Enter credentials
             page.locator("//input[@placeholder='Enter your active Email ID / Username']").fill(username);
             page.locator("//input[@placeholder='Enter your password']").fill(password);
 
-            // Click login
+            // Click login button
             page.locator("//button[text()='Login']").click();
 
             // Wait for profile drawer
