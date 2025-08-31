@@ -18,7 +18,7 @@ public class PlaywrightController {
         String username = body.get("username");
         String password = body.get("password");
         try (Playwright playwright = Playwright.create()) {
-            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false));
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
             Page page = browser.newPage();
             page.navigate("https://www.naukri.com/mnjuser/login");
 
