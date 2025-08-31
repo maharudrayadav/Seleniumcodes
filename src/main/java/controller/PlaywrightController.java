@@ -20,20 +20,22 @@ public class PlaywrightController {
         try (Playwright playwright = Playwright.create()) {
 
             // Configure launch options for Render deployment
-            BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
-                    .setHeadless(true)
-                    .setArgs(List.of(
-                            "--no-sandbox",
-                            "--disable-dev-shm-usage",
-                            "--disable-gpu",
-                            "--disable-setuid-sandbox",
-                            "--disable-software-rasterizer",
-                            "--disable-features=VizDisplayCompositor"
-                    ));
+            Browser browser = playwright.chromium().launch(
+                    new BrowserType.LaunchOptions()
+                            .setHeadless(true)
+                            .setArgs(List.of(
+                                    "--no-sandbox",
+                                    "--disable-dev-shm-usage",
+                                    "--disable-gpu",
+                                    "--disable-setuid-sandbox",
+                                    "--disable-software-rasterizer",
+                                    "--disable-features=VizDisplayCompositor"
+                            ))
+            );
 
 
             // Launch Chromium with custom options
-            Browser browser = playwright.chromium().launch(launchOptions);
+//            Browser browser = playwright.chromium().launch(launchOptions);
 
             Page page = browser.newPage();
             page.setDefaultTimeout(60000);

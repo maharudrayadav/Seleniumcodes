@@ -1,28 +1,37 @@
-# Use official Playwright Java image (includes Chromium + dependencies)
-FROM mcr.microsoft.com/playwright/java:v1.47.0-jammy
+# Use an official JDK base image
+FROM openjdk:17-jdk-slim
+
+# Install dependencies required for Chromium (Playwright)
+RUN apt-get update && apt-get install -y \
+    wget gnupg ca-certificates fonts-liberation \
+    libappindicator3-1 libasound2 libatk-bridge2.0-0 libatk1.0-0 \
+    libcups2 libdbus-1-3 libgdk-pixbuf2.0-0 libnspr4 libnss3 \
+    libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 \
+    xdg-utils chromium chromium-driver && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Copy Maven/Gradle config first to cache dependencies
-COPY pom.xml .
+# Copy Maven wrapper & POM first to leverage Docker caching
 COPY mvnw .
 COPY .mvn .mvn
+COPY pom.xml .
 
-# Give execution permission to mvnw
+# Make Maven wrapper executable
 RUN chmod +x mvnw
 
-# Download Maven dependencies
+# Download dependencies
 RUN ./mvnw dependency:go-offline
 
-# Copy application code
+# Copy source code
 COPY src ./src
 
-# Package the Spring Boot app
+# Build the Spring Boot application
 RUN ./mvnw clean package -DskipTests
 
-# Expose app port
+# Expose the port
 EXPOSE 8080
 
-# Run the JAR
+# Run the application
 ENTRYPOINT ["java", "-jar", "target/app.jar"]
