@@ -19,58 +19,63 @@ public class PlaywrightController {
 
         try (Playwright playwright = Playwright.create()) {
 
-            // Configure launch options for Render deployment
+            // Launch Chromium in headless mode for Render deployment
             Browser browser = playwright.chromium().launch(
                     new BrowserType.LaunchOptions()
-                            .setHeadless(true)
+                            .setHeadless(true)  // MUST be true on Render
                             .setArgs(List.of(
                                     "--no-sandbox",
                                     "--disable-dev-shm-usage",
                                     "--disable-gpu",
-                                    "--disable-setuid-sandbox",
                                     "--disable-software-rasterizer",
-                                    "--disable-features=VizDisplayCompositor"
+                                    "--disable-setuid-sandbox",
+                                    "--disable-features=VizDisplayCompositor",
+                                    "--single-process",
+                                    "--disable-background-timer-throttling",
+                                    "--disable-backgrounding-occluded-windows",
+                                    "--disable-renderer-backgrounding"
                             ))
             );
 
-
-            // Launch Chromium with custom options
-//            Browser browser = playwright.chromium().launch(launchOptions);
-
             Page page = browser.newPage();
-            page.setDefaultTimeout(60000);
+            page.setDefaultTimeout(90000); // Increased timeout for Render
 
             // Open Naukri website
             page.navigate("https://www.naukri.com");
             page.waitForLoadState(LoadState.NETWORKIDLE);
 
+            // Click Login button
             Locator loginBtn = page.locator("//a[normalize-space(text())='Login']");
             loginBtn.waitFor(new Locator.WaitForOptions()
                     .setState(WaitForSelectorState.VISIBLE)
-                    .setTimeout(60000));
+                    .setTimeout(90000));
             loginBtn.click();
 
             // Enter credentials
             page.locator("//input[@placeholder='Enter your active Email ID / Username']").fill(username);
             page.locator("//input[@placeholder='Enter your password']").fill(password);
 
-            // Click login button
+            // Click Login button
             page.locator("//button[text()='Login']").click();
 
-            // Wait for profile drawer
+            // Wait for profile drawer to appear
             Locator viewProfile = page.locator("//div[contains(@class,'drawer__bars')]");
-            viewProfile.waitFor(new Locator.WaitForOptions().setTimeout(45000));
+            viewProfile.waitFor(new Locator.WaitForOptions().setTimeout(60000));
             viewProfile.click();
 
             // Go to profile view
             page.locator("//a[@class='nI-gNb-info__sub-link']").click();
 
-            // Edit and fetch name
+            // Click edit option and fetch current name
             page.locator("//em[text()='editOneTheme']").click();
             String currentName = page.locator("#name").inputValue();
 
             browser.close();
             return currentName;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Failed: " + e.getMessage();
         }
     }
 }
