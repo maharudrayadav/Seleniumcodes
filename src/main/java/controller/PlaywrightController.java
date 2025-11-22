@@ -24,11 +24,13 @@ public class PlaywrightController {
 
         try (Playwright playwright = Playwright.create()) {
             Browser browser = playwright.chromium().launch(
-                    new BrowserType.LaunchOptions().setHeadless(false)
+                    new BrowserType.LaunchOptions().setHeadless(true)
             );
-            Page page = browser.newPage();
 
+            Page page = browser.newPage();
             page.navigate("https://www.naukri.com/mnjuser/login");
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+
             page.fill("#usernameField", username);
             page.fill("#passwordField", password);
             page.click("button:has-text('Login')");
@@ -65,8 +67,8 @@ public class PlaywrightController {
 
             Browser browser = playwright.chromium().launch(
                     new BrowserType.LaunchOptions()
-                            .setHeadless(false)
-                            .setArgs(Arrays.asList("--disable-blink-features=AutomationControlled", "--start-maximized"))
+                            .setHeadless(true) // Mandatory for Render
+                            .setArgs(Arrays.asList("--disable-blink-features=AutomationControlled"))
             );
 
             Page page = browser.newPage();
@@ -79,7 +81,7 @@ public class PlaywrightController {
             page.waitForTimeout(5000);
 
             page.navigate("https://www.naukri.com/mnjuser/profile");
-            page.waitForTimeout(5000);
+            page.waitForLoadState(LoadState.NETWORKIDLE);
 
             page.evaluate("window.scrollBy(0,800)");
 
@@ -92,26 +94,24 @@ public class PlaywrightController {
         }
     }
 
-   private String downloadGoogleDriveFile(String driveLink) throws Exception {
+    private String downloadGoogleDriveFile(String driveLink) throws Exception {
 
-    String fileId = driveLink.split("/d/")[1].split("/")[0];
-    String downloadUrl = "https://drive.google.com/uc?export=download&id=" + fileId;
+        String fileId = driveLink.split("/d/")[1].split("/")[0];
+        String downloadUrl = "https://drive.google.com/uc?export=download&id=" + fileId;
 
-    // Use system temp folder (works on Windows, Linux, Docker)
-    String targetPath = System.getProperty("java.io.tmpdir") + "/resume.pdf";
-    File file = new File(targetPath);
+        String targetPath = System.getProperty("java.io.tmpdir") + "/resume.pdf";
+        File file = new File(targetPath);
 
-    try (InputStream in = new URL(downloadUrl).openStream();
-         FileOutputStream fos = new FileOutputStream(file)) {
+        try (InputStream in = new URL(downloadUrl).openStream();
+             FileOutputStream fos = new FileOutputStream(file)) {
 
-        byte[] buffer = new byte[4096];
-        int len;
-        while ((len = in.read(buffer)) > 0) {
-            fos.write(buffer, 0, len);
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = in.read(buffer)) > 0) {
+                fos.write(buffer, 0, len);
+            }
         }
+
+        return file.getAbsolutePath();
     }
-
-    return file.getAbsolutePath();
-}
-
 }
