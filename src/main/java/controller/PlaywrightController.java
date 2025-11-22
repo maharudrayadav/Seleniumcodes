@@ -92,25 +92,26 @@ public class PlaywrightController {
         }
     }
 
-    private String downloadGoogleDriveFile(String driveLink) throws Exception {
+   private String downloadGoogleDriveFile(String driveLink) throws Exception {
 
-        String fileId = driveLink.split("/d/")[1].split("/")[0];
-        String downloadUrl = "https://drive.google.com/uc?export=download&id=" + fileId;
+    String fileId = driveLink.split("/d/")[1].split("/")[0];
+    String downloadUrl = "https://drive.google.com/uc?export=download&id=" + fileId;
 
-        String targetPath = "D:/UploadedResume/resume.pdf";
-        File file = new File(targetPath);
-        file.getParentFile().mkdirs();
+    // Use system temp folder (works on Windows, Linux, Docker)
+    String targetPath = System.getProperty("java.io.tmpdir") + "/resume.pdf";
+    File file = new File(targetPath);
 
-        try (InputStream in = new URL(downloadUrl).openStream();
-             FileOutputStream fos = new FileOutputStream(file)) {
+    try (InputStream in = new URL(downloadUrl).openStream();
+         FileOutputStream fos = new FileOutputStream(file)) {
 
-            byte[] buffer = new byte[4096];
-            int len;
-            while ((len = in.read(buffer)) > 0) {
-                fos.write(buffer, 0, len);
-            }
+        byte[] buffer = new byte[4096];
+        int len;
+        while ((len = in.read(buffer)) > 0) {
+            fos.write(buffer, 0, len);
         }
-
-        return file.getAbsolutePath();
     }
+
+    return file.getAbsolutePath();
+}
+
 }
