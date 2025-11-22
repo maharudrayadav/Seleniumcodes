@@ -1,6 +1,7 @@
 package controller;
 
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -8,6 +9,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Map;
 
 @RestController
@@ -15,7 +18,7 @@ import java.util.Map;
 public class PlaywrightController {
 
     @PostMapping("/open-chrome")
-    public String openChrome(@RequestBody Map<String, String> body) throws InterruptedException {
+    public String openChrome(@RequestBody Map<String, String> body) {
         String username = body.get("username");
         String password = body.get("password");
 
@@ -26,7 +29,6 @@ public class PlaywrightController {
             Page page = browser.newPage();
 
             page.navigate("https://www.naukri.com/mnjuser/login");
-
             page.fill("#usernameField", username);
             page.fill("#passwordField", password);
             page.click("button:has-text('Login')");
@@ -51,33 +53,23 @@ public class PlaywrightController {
             uploadResumeProcess(email, password, driveLink);
             return ResponseEntity.ok("Resume Upload Started Successfully");
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
 
     public void uploadResumeProcess(String email, String password, String driveLink) throws Exception {
 
-        // Step 1: Download file
         String resumePath = downloadGoogleDriveFile(driveLink);
 
-        // Step 2: Playwright Browser
         try (Playwright playwright = Playwright.create()) {
 
             Browser browser = playwright.chromium().launch(
                     new BrowserType.LaunchOptions()
                             .setHeadless(false)
-                            .setArgs(new String[]{
-                                    "--disable-blink-features=AutomationControlled",
-                                    "--start-maximized"
-                            })
+                            .setArgs(Arrays.asList("--disable-blink-features=AutomationControlled", "--start-maximized"))
             );
 
-            BrowserContext context = browser.newContext();
-            Page page = context.newPage();
-
-            System.out.println("=== Step 1: LOGIN ===");
-
+            Page page = browser.newPage();
             page.navigate("https://www.naukri.com/nlogin/login");
             page.waitForLoadState(LoadState.NETWORKIDLE);
 
@@ -86,25 +78,19 @@ public class PlaywrightController {
             page.click("button:has-text('Login')");
             page.waitForTimeout(5000);
 
-            System.out.println("Navigating to Profile Page...");
             page.navigate("https://www.naukri.com/mnjuser/profile");
             page.waitForTimeout(5000);
 
-            // Scroll & upload file
-            page.evaluate("window.scrollBy(0, 800)");
-            page.waitForTimeout(2000);
+            page.evaluate("window.scrollBy(0,800)");
 
-            page.setInputFiles("input[type='file']", resumePath);
+            page.setInputFiles("input[type='file']", Paths.get(resumePath));
 
             page.click("button:has-text('Save'), button:has-text('Upload'), span:has-text('Save')");
             page.waitForTimeout(6000);
 
-            System.out.println("✓ Resume Updated Successfully!");
-
             browser.close();
         }
     }
-
 
     private String downloadGoogleDriveFile(String driveLink) throws Exception {
 
