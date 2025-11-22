@@ -23,25 +23,33 @@ public class PlaywrightController {
         String password = body.get("password");
 
         try (Playwright playwright = Playwright.create()) {
+
             Browser browser = playwright.chromium().launch(
-                    new BrowserType.LaunchOptions().setHeadless(true)
+                    new BrowserType.LaunchOptions()
+                            .setHeadless(true)
+                            .setArgs(Arrays.asList("--disable-blink-features=AutomationControlled"))
             );
 
             Page page = browser.newPage();
-            page.navigate("https://www.naukri.com/mnjuser/login");
+
+            page.navigate("https://www.naukri.com/nlogin/login");
             page.waitForLoadState(LoadState.NETWORKIDLE);
 
+            page.waitForSelector("#usernameField", new Page.WaitForSelectorOptions().setTimeout(60000));
             page.fill("#usernameField", username);
             page.fill("#passwordField", password);
             page.click("button:has-text('Login')");
-            page.waitForLoadState(LoadState.NETWORKIDLE);
+            page.waitForTimeout(6000);
 
             page.navigate("https://www.naukri.com/mnjuser/profile");
             page.waitForLoadState(LoadState.NETWORKIDLE);
 
             String name = page.inputValue("input[placeholder='Enter Your Name']");
             browser.close();
+
             return name;
+        } catch (Exception ex) {
+            return "Error: " + ex.getMessage();
         }
     }
 
@@ -53,7 +61,7 @@ public class PlaywrightController {
 
         try {
             uploadResumeProcess(email, password, driveLink);
-            return ResponseEntity.ok("Resume Upload Started Successfully");
+            return ResponseEntity.ok("Resume Upload Successfully Started!");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
@@ -67,29 +75,36 @@ public class PlaywrightController {
 
             Browser browser = playwright.chromium().launch(
                     new BrowserType.LaunchOptions()
-                            .setHeadless(true) // Mandatory for Render
+                            .setHeadless(true)
                             .setArgs(Arrays.asList("--disable-blink-features=AutomationControlled"))
             );
 
             Page page = browser.newPage();
-            page.navigate("https://www.naukri.com/nlogin/login");
-            page.waitForLoadState(LoadState.NETWORKIDLE);
+            page.setExtraHTTPHeaders(Map.of(
+                    "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari"
+            ));
 
+            page.navigate("https://www.naukri.com/nlogin/login");
+            page.waitForLoadState(LoadState.DOMCONTENTLOADED);
+
+            page.waitForSelector("#usernameField", new Page.WaitForSelectorOptions().setTimeout(60000));
             page.fill("#usernameField", email);
             page.fill("#passwordField", password);
             page.click("button:has-text('Login')");
-            page.waitForTimeout(5000);
+            page.waitForTimeout(7000);
 
             page.navigate("https://www.naukri.com/mnjuser/profile");
-            page.waitForLoadState(LoadState.NETWORKIDLE);
+            page.waitForTimeout(7000);
 
-            page.evaluate("window.scrollBy(0,800)");
+            page.evaluate("window.scrollBy(0, 800)");
+            page.waitForSelector("input[type='file']");
 
             page.setInputFiles("input[type='file']", Paths.get(resumePath));
 
             page.click("button:has-text('Save'), button:has-text('Upload'), span:has-text('Save')");
             page.waitForTimeout(6000);
 
+            System.out.println("Resume uploaded successfully");
             browser.close();
         }
     }
@@ -112,6 +127,7 @@ public class PlaywrightController {
             }
         }
 
+        System.out.println("Resume path: " + file.getAbsolutePath());
         return file.getAbsolutePath();
     }
 }
